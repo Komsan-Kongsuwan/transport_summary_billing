@@ -76,9 +76,13 @@ merged_df = merged_df.rename(columns=rename_map)
 # --- Convert all column names to Proper Case ---
 merged_df.columns = [str(col).strip().title() for col in merged_df.columns]
 
-# --- Sort by Order Date and Du_Order ---
-if "Order Date" in merged_df.columns and "Du_Order" in merged_df.columns:
-    merged_df = merged_df.sort_values(by=["Order Date", "Du_Order"], ascending=[True, True])
+# --- Show actual columns for debugging ---
+st.write("Columns after renaming:", merged_df.columns.tolist())
+
+# --- Sort by Order Date and Du_Order if they exist ---
+sort_cols = [c for c in ["Order Date", "Du_Order"] if c in merged_df.columns]
+if sort_cols:
+    merged_df = merged_df.sort_values(by=sort_cols, ascending=True)
 
 # --- Display results ---
 st.subheader("Merged DataFrame (Sheets 1–31)")
@@ -105,20 +109,21 @@ if not merged_df.empty:
         cell.fill = header_fill
 
     # Group rows visually by Order Date (shade alternating groups)
-    order_date_col = merged_df.columns.get_loc("Order Date") + 1
-    prev_date = None
-    fill1 = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
-    fill2 = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")
-    current_fill = fill1
+    if "Order Date" in merged_df.columns:
+        order_date_col = merged_df.columns.get_loc("Order Date") + 1
+        prev_date = None
+        fill1 = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+        fill2 = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")
+        current_fill = fill1
 
-    for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
-        date_value = row[order_date_col - 1].value
-        if date_value != prev_date:
-            # Switch fill when new Order Date starts
-            current_fill = fill2 if current_fill == fill1 else fill1
-            prev_date = date_value
-        for cell in row:
-            cell.fill = current_fill
+        for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
+            date_value = row[order_date_col - 1].value
+            if date_value != prev_date:
+                # Switch fill when new Order Date starts
+                current_fill = fill2 if current_fill == fill1 else fill1
+                prev_date = date_value
+            for cell in row:
+                cell.fill = current_fill
 
     # Save to buffer
     excel_buffer = BytesIO()
