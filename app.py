@@ -62,6 +62,18 @@ else:
     merged_df = pd.DataFrame()
     st.warning("No sheets named 1–31 were found in the uploaded file.")
 
+# --- Rename specific columns once ---
+rename_map = {
+    "ADDRESS": "ADDRESS 1",
+    "Unnamed: 8": "ADDRESS 2",
+    "Unnamed: 9": "PROVINCE",
+    "DU/ORDER": "DU_Order"
+}
+merged_df = merged_df.rename(columns=rename_map)
+
+# --- Convert all column names to Proper Case (Title Case) ---
+merged_df.columns = [str(col).strip().title() for col in merged_df.columns]
+
 # --- Display results ---
 st.subheader("Merged DataFrame (Sheets 1–31)")
 st.dataframe(merged_df, use_container_width=True)
