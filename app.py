@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
-from datetime import date
+from datetime import date, datetime
 
 st.set_page_config(page_title="Summary Billing Transport", layout="wide")
 
@@ -9,24 +9,50 @@ st.title("Summary Billing Transport")
 st.caption("Converted from VBA → Python (Streamlit Cloud)")
 
 uploaded_file = st.file_uploader(
-    "Upload Excel file (Summary Billing To Customer...)",
+    "Upload Excel file (Summary Billing To Customer...)", 
     type=["xlsx", "xlsm"]
 )
 
 if not uploaded_file:
     st.stop()
 
-# --- Detect available sheet names and filter to 1..31 ---
+# --- Input fields for Month and Year ---
+st.subheader("Order Date Settings")
+
+month = st.text_input("Enter Month (1–12):")
+year = st.text_input("Enter Year (e.g. 2025):")
+
+# Validate inputs
+if not month or not year:
+    st.error("⚠️ Please enter both Month and Year.")
+    st.stop()
+
+try:
+    month = int(month)
+    year = int(year)
+    if not (1 <= month <= 12):
+        st.error("⚠️ Month must be between 1 and 12.")
+        st.stop()
+except ValueError:
+    st.error("⚠️ Month and Year must be numbers.")
+    st.stop()
+
+# --- Detect available sheet names ---
 xls = pd.ExcelFile(uploaded_file)
 available_sheets = xls.sheet_names
 target_sheets = [s for s in available_sheets if s.isdigit() and 1 <= int(s) <= 31]
 
-# --- Read each sheet using row 8 (header=7) and add sheet_name ---
+# --- Read each sheet using row 8 as header and add Order Date ---
 merged_parts = []
 for sheet_name in target_sheets:
     df = pd.read_excel(uploaded_file, sheet_name=sheet_name, header=7)
-    # Add sheet name for provenance
-    df = df.assign(sheet_name=sheet_name)
+    # Build Order Date from Year, Month, and sheet_name (day)
+    day = int(sheet_name)
+    try:
+        order_date = datetime(year, month, day).date()
+    except ValueError:
+        order_date = None  # invalid day for that month/year
+    df = df.assign(sheet_name=sheet_name, Order_Date=order_date)
     merged_parts.append(df)
 
 # --- Merge all sheets ---
