@@ -46,16 +46,17 @@ MONTH = main_date.month
 # ===============================
 # LOAD SUPPORT TABLES
 # ===============================
-cargo_df = pd.DataFrame(
-    wb["Cargo and Weight"].values
-).iloc[1:].rename(columns=lambda x: x)
+# ===============================
+# LOAD SUPPORT TABLES (SAFE)
+# ===============================
 
-sell_df = pd.DataFrame(
-    wb["Sell Price"].values
-).iloc[1:].rename(columns=lambda x: x)
+cargo_raw = pd.DataFrame(wb["Cargo and Weight"].values)
+cargo_df = cargo_raw.iloc[1:, [1, 4]]   # B = Part Number, E = Weight
+cargo_df.columns = ["Part Number", "Weight"]
 
-cargo_df.columns = ["No", "Part Number", "Desc", "Unit", "Weight"]
-sell_df.columns = ["Post Code", "Area", "X", "Min Charge", "Rate/KG"]
+sell_raw = pd.DataFrame(wb["Sell Price"].values)
+sell_df = sell_raw.iloc[1:, [0, 2, 3, 4]]  # A, C, D, E
+sell_df.columns = ["Post Code", "Area", "Min Charge", "Rate/KG"]
 
 # ===============================
 # COLLECT TEMP DATA
