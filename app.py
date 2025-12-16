@@ -244,3 +244,5 @@ with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
         )
 
 output.seek(0)
+
+st.download_button( "Download Summary File", data=output, file_name="Summary_Billing_Output.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" )
