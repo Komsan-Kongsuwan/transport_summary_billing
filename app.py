@@ -76,9 +76,6 @@ merged_df = merged_df.rename(columns=rename_map)
 # --- Convert all column names to Proper Case ---
 merged_df.columns = [str(col).strip().title() for col in merged_df.columns]
 
-# --- Show actual columns for debugging ---
-st.write("Columns after renaming:", merged_df.columns.tolist())
-
 # --- Sort by Order Date and Du_Order if they exist ---
 sort_cols = [c for c in ["Order Date", "Du_Order"] if c in merged_df.columns]
 if sort_cols:
@@ -91,7 +88,7 @@ st.dataframe(merged_df, use_container_width=True)
 st.write("Number of rows:", len(merged_df))
 st.write("Sheets merged:", target_sheets)
 
-# --- Download Excel with grouping style ---
+# --- Download Excel with grouping style and merged Order Date cells ---
 if not merged_df.empty:
     wb = Workbook()
     ws = wb.active
@@ -108,22 +105,40 @@ if not merged_df.empty:
         cell.alignment = Alignment(horizontal="center")
         cell.fill = header_fill
 
-    # Group rows visually by Order Date (shade alternating groups)
+    # Group rows visually by Order Date (shade alternating groups + merge cells)
     if "Order Date" in merged_df.columns:
         order_date_col = merged_df.columns.get_loc("Order Date") + 1
         prev_date = None
+        start_row = 2
         fill1 = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
         fill2 = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")
         current_fill = fill1
 
-        for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
-            date_value = row[order_date_col - 1].value
+        for row_idx in range(2, ws.max_row + 1):
+            date_value = ws.cell(row=row_idx, column=order_date_col).value
             if date_value != prev_date:
+                # Merge previous group if more than one row
+                if prev_date is not None and row_idx - 1 > start_row:
+                    ws.merge_cells(
+                        start_row=start_row, start_column=order_date_col,
+                        end_row=row_idx - 1, end_column=order_date_col
+                    )
+                    ws.cell(row=start_row, column=order_date_col).alignment = Alignment(vertical="center")
                 # Switch fill when new Order Date starts
                 current_fill = fill2 if current_fill == fill1 else fill1
+                start_row = row_idx
                 prev_date = date_value
-            for cell in row:
+            # Apply fill
+            for cell in ws[row_idx]:
                 cell.fill = current_fill
+
+        # Merge last group
+        if prev_date is not None and ws.max_row >= start_row:
+            ws.merge_cells(
+                start_row=start_row, start_column=order_date_col,
+                end_row=ws.max_row, end_column=order_date_col
+            )
+            ws.cell(row=start_row, column=order_date_col).alignment = Alignment(vertical="center")
 
     # Save to buffer
     excel_buffer = BytesIO()
