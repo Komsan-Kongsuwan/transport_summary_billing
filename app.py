@@ -31,7 +31,7 @@ required_sheets = ["Main", "Cargo and Weight", "Sell Price"]
 missing = [s for s in required_sheets if s not in sheet_names]
 
 if missing:
-    st.error(f"Missing required sheets: {missing}")
+    st.error(f"ไม่มีชีท หรือ พิมพ์ชื่อชีทไม่ถูกต้อง: {missing}")
     st.stop()
 
 # ===============================
