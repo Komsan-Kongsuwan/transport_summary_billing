@@ -98,7 +98,7 @@ temp_df.sort_values(["Order Date", "DU-Order"], inplace=True)
 # ===============================
 summary_rows = []
 
-for du_order, grp in temp_df.groupby("DU-Order", sort=False):
+for (order_date, du_order), grp in temp_df.groupby(["Order Date", "DU-Order"], sort=False):
     header = grp.iloc[0]
 
     sum_qty = 0
@@ -159,6 +159,8 @@ for du_order, grp in temp_df.groupby("DU-Order", sort=False):
             sum_weight += weight
 
         summary_rows.append({
+            "Order Date": order_date,
+            "DU-Order": du_order,
             "Order Date": "",
             "DU": "",
             "DU-Order": "",
