@@ -201,23 +201,46 @@ for (order_date, du_order), grp in temp_df.groupby(["Order Date", "DU-Order"], s
 summary_df = pd.DataFrame(summary_rows)
 
 # ===============================
-# EXPORT TO EXCEL
+# FIND ORDER DATE GROUP RANGES
+# ===============================
+order_date_groups = []
+
+current_date = None
+start_row = 0  # dataframe index (0-based)
+
+for idx, val in enumerate(summary_df["Order Date"]):
+    if val and val != current_date:
+        if current_date is not None:
+            order_date_groups.append((start_row, idx - 1))
+        current_date = val
+        start_row = idx
+
+# last group
+order_date_groups.append((start_row, len(summary_df) - 1))
+
+# ===============================
+# EXPORT TO EXCEL WITH GROUP BORDERS
 # ===============================
 output = BytesIO()
 
 with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
     summary_df.to_excel(writer, sheet_name="Summary", index=False)
 
+    workbook  = writer.book
+    worksheet = writer.sheets["Summary"]
+
+    # Border format
+    border_fmt = workbook.add_format({
+        "border": 1
+    })
+
+    # Apply border to each Order Date group
+    for start, end in order_date_groups:
+        # +1 because Excel row 0 is header
+        worksheet.conditional_format(
+            start + 1, 0,
+            end + 1, len(summary_df.columns) - 1,
+            {"type": "no_blanks", "format": border_fmt}
+        )
+
 output.seek(0)
-
-# ===============================
-# DOWNLOAD
-# ===============================
-st.success("Processing completed successfully")
-
-st.download_button(
-    "Download Summary File",
-    data=output,
-    file_name="Summary_Billing_Output.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
