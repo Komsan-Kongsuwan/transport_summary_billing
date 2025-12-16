@@ -17,9 +17,15 @@ uploaded_file = st.file_uploader(
 if not uploaded_file:
     st.stop()
 
-# --- Read and merge sheets 1..31 ---
-sheet_names = [str(i) for i in range(1, 32)]
-dfs = pd.read_excel(uploaded_file, sheet_name=sheet_names)
+# --- Detect available sheet names ---
+xls = pd.ExcelFile(uploaded_file)
+available_sheets = xls.sheet_names
+
+# Filter only those that are numeric 1..31
+target_sheets = [s for s in available_sheets if s.isdigit() and 1 <= int(s) <= 31]
+
+# --- Read and merge only existing sheets ---
+dfs = pd.read_excel(uploaded_file, sheet_name=target_sheets)
 
 merged_df = pd.concat(
     [df.assign(sheet_name=name) for name, df in dfs.items()],
@@ -31,7 +37,7 @@ st.subheader("Merged DataFrame (Sheets 1–31)")
 st.dataframe(merged_df)
 
 st.write("Number of rows:", len(merged_df))
-st.write("Sheets merged:", sheet_names)
+st.write("Sheets merged:", target_sheets)
 
 # --- Download buttons ---
 # CSV
