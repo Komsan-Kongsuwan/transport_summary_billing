@@ -40,7 +40,8 @@ wb = load_workbook(uploaded_file, data_only=True)
 
 merged_parts = []
 for sheet_name in target_sheets:
-    df = pd.read_excel(uploaded_file, sheet_name=sheet_name)
+    # Use row 8 as header (header=7 because pandas is zero-based)
+    df = pd.read_excel(uploaded_file, sheet_name=sheet_name, header=7)
     
     # Read cell A7 directly
     ws = wb[sheet_name]
