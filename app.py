@@ -35,19 +35,24 @@ xls = pd.ExcelFile(uploaded_file)
 available_sheets = xls.sheet_names
 target_sheets = [s for s in available_sheets if s.isdigit() and 1 <= int(s) <= 31]
 
-# --- Read and merge sheets ---
-dfs = pd.read_excel(uploaded_file, sheet_name=target_sheets)
+# --- Use openpyxl to read cell A7 from each sheet ---
+wb = load_workbook(uploaded_file, data_only=True)
 
-merged_df = pd.concat(
-    [
-        df.assign(
-            sheet_name=name,
-            Order_Date=parse_thai_date(df.iloc[6, 0] if len(df) > 6 else None)
-        )
-        for name, df in dfs.items()
-    ],
-    ignore_index=True
-)
+merged_parts = []
+for sheet_name in target_sheets:
+    df = pd.read_excel(uploaded_file, sheet_name=sheet_name)
+    
+    # Read cell A7 directly
+    ws = wb[sheet_name]
+    raw_date = ws["A7"].value
+    order_date = parse_thai_date(raw_date)
+    
+    # Assign Order_Date and sheet_name to all rows
+    df = df.assign(sheet_name=sheet_name, Order_Date=order_date)
+    merged_parts.append(df)
+
+# --- Merge all sheets ---
+merged_df = pd.concat(merged_parts, ignore_index=True)
 
 # --- Display results ---
 st.subheader("Merged DataFrame (Sheets 1–31)")
