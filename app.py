@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
+import re
 from io import BytesIO
-from datetime import date
+from datetime import datetime, date
 from openpyxl import load_workbook
 
 st.set_page_config(page_title="Summary Billing Transport", layout="wide")
@@ -17,18 +18,34 @@ uploaded_file = st.file_uploader(
 if not uploaded_file:
     st.stop()
 
+# --- Helper function to parse Thai Buddhist Era date ---
+def parse_thai_date(date_str):
+    if not date_str:
+        return None
+    cleaned = str(date_str).replace("วันที่", "").strip()
+    match = re.search(r"(\d{1,2})/(\d{1,2})/(\d{4})", cleaned)
+    if match:
+        day, month, year = map(int, match.groups())
+        year -= 543  # Convert BE to Gregorian
+        return datetime(year, month, day).date()
+    return None
+
 # --- Detect available sheet names ---
 xls = pd.ExcelFile(uploaded_file)
 available_sheets = xls.sheet_names
-
-# Filter only those that are numeric 1..31
 target_sheets = [s for s in available_sheets if s.isdigit() and 1 <= int(s) <= 31]
 
-# --- Read and merge only existing sheets ---
+# --- Read and merge sheets ---
 dfs = pd.read_excel(uploaded_file, sheet_name=target_sheets)
 
 merged_df = pd.concat(
-    [df.assign(sheet_name=name) for name, df in dfs.items()],
+    [
+        df.assign(
+            sheet_name=name,
+            Order_Date=parse_thai_date(df.iloc[6, 0] if len(df) > 6 else None)
+        )
+        for name, df in dfs.items()
+    ],
     ignore_index=True
 )
 
